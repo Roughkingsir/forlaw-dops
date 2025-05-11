@@ -17,6 +17,8 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         echo "Installing Django and React dependencies..."
+        sh "which python3 || sudo apt install python3 -y"
+        sh "which pip || sudo apt install python3-pip -y"
         sh "pip install -r backend/requirements.txt"
         sh "cd frontend && npm install"
       }
