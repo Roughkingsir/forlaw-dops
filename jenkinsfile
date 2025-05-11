@@ -10,7 +10,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', credentialsId: 'GitlabCred', url: 'https://github.com/Roughkingsir/forlaw-dops.git'
+        git branch: 'main', credentialsId: 'gitcreds', url: 'https://github.com/Roughkingsir/forlaw-dops.git'
       }
     }
 
@@ -40,17 +40,16 @@ pipeline {
       steps {
         echo "Running Security Scans with Bandit and Safety"
         sh "bandit -r backend"
-        sh "safety check --file=requirements.txt"
+        sh "safety check --file=backend/requirements.txt"
       }
     }
 
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
-        withSonarQubeEnv('mysonarqube') {
-          sh "sonar-scanner -Dsonar.projectKey=yourproject \
+        withSonarQubeEnv('mysonar') {
+          sh "sonar-scanner -Dsonar.projectKey=forlaw-dops \
                            -Dsonar.sources=backend,frontend \
-                           -Dsonar.language=py \
                            -Dsonar.python.coverage.reportPaths=backend/coverage.xml"
         }
       }

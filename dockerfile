@@ -1,17 +1,26 @@
-FROM python:3.10
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Backend (Django)
+FROM python:3.10-slim as backend
 
 WORKDIR /app
-
 COPY backend/ /app/
+RUN pip install -r requirements.txt
 
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Frontend (React)
+FROM node:18-alpine as frontend
 
-RUN python manage.py collectstatic --noinput
+WORKDIR /frontend
+COPY frontend/ /frontend/
+RUN npm install && npm run build
 
-EXPOSE 8000
+# Final image
+FROM python:3.10-slim
+WORKDIR /app
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "demoapp.wsgi:application"]
+# Copy Django backend
+COPY --from=backend /app /app
+
+# Copy React build
+COPY --from=frontend /frontend/build /app/static/
+
+ENV DJANGO_SETTINGS_MODULE=backend.settings
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi"]
