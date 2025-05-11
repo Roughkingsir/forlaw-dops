@@ -10,7 +10,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', credentialsId: 'gitcreds', url: 'https://github.com/Roughkingsir/forlaw-dops.git'
+        git branch: 'master', credentialsId: 'gitcreds', url: 'https://github.com/Roughkingsir/forlaw-dops.git'
       }
     }
 
@@ -74,7 +74,7 @@ pipeline {
         echo "Building Docker Image"
         script {
           docker.withRegistry('', registryCredential) {
-            def myImage = docker.build(registry)
+            def myImage = docker.build(registry, "-f dockerfile .")
             myImage.push()
           }
         }
