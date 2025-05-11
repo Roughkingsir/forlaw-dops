@@ -1,10 +1,10 @@
 # CI/CD Test App
 
-This is a simple app to test your CI/CD pipeline, consisting of a React frontend and a FastAPI backend.
+This is a simple app to test your CI/CD pipeline, consisting of a React frontend and a Django backend.
 
 ## Folder Structure
 - `frontend/`: React app
-- `backend/`: FastAPI app
+- `backend/`: Django app
 
 ---
 
@@ -18,9 +18,13 @@ This is a simple app to test your CI/CD pipeline, consisting of a React frontend
    ```bash
    pip install -r requirements.txt
    ```
-3. Start the FastAPI server:
+3. Run migrations:
    ```bash
-   uvicorn main:app --reload
+   python manage.py migrate
+   ```
+4. Start the Django server:
+   ```bash
+   python manage.py runserver
    ```
 
 ---
@@ -40,4 +44,4 @@ This is a simple app to test your CI/CD pipeline, consisting of a React frontend
    npm start
    ```
 
-The React app will try to fetch a message from the FastAPI backend at `http://localhost:8000/`. 
+The React app will try to fetch a message from the Django backend at `http://localhost:8000/`. 

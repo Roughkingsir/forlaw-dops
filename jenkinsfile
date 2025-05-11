@@ -1,0 +1,101 @@
+pipeline {
+  agent { label 'build' }
+
+  environment {
+    registry = "saadkhan0/yourapp"
+    registryCredential = 'dockerhub'
+    DJANGO_SETTINGS_MODULE = 'yourproject.settings'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', credentialsId: 'GitlabCred', url: 'https://github.com/Roughkingsir/forlaw-dops.git'
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        echo "Installing Django and React dependencies..."
+        sh "pip install -r backend/requirements.txt"
+        sh "cd frontend && npm install"
+      }
+    }
+
+    stage('Run Tests & Coverage (Backend)') {
+      steps {
+        echo "Running Django Tests with Coverage"
+        sh "cd backend && coverage run manage.py test && coverage report && coverage xml"
+      }
+    }
+
+    stage('Run Tests (Frontend)') {
+      steps {
+        echo "Running React Tests"
+        sh "cd frontend && npm test -- --watchAll=false"
+      }
+    }
+
+    stage('SCA & SAST') {
+      steps {
+        echo "Running Security Scans with Bandit and Safety"
+        sh "bandit -r backend"
+        sh "safety check --file=requirements.txt"
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      steps {
+        echo "Running SonarQube for Python and JS"
+        withSonarQubeEnv('mysonarqube') {
+          sh "sonar-scanner -Dsonar.projectKey=yourproject \
+                           -Dsonar.sources=backend,frontend \
+                           -Dsonar.language=py \
+                           -Dsonar.python.coverage.reportPaths=backend/coverage.xml"
+        }
+      }
+    }
+
+    stage('Quality Gates') {
+      steps {
+        echo "Checking Quality Gate"
+        script {
+          timeout(time: 1, unit: 'MINUTES') {
+            def qg = waitForQualityGate()
+            if (qg.status != 'OK') {
+              error "Pipeline failed due to quality gate: ${qg.status}"
+            }
+          }
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        echo "Building Docker Image"
+        script {
+          docker.withRegistry('', registryCredential) {
+            def myImage = docker.build(registry)
+            myImage.push()
+          }
+        }
+      }
+    }
+
+    stage('Scan Docker Image') {
+      steps {
+        echo "Scanning Docker Image with Trivy"
+        sh "trivy image --scanners vuln --offline-scan ${registry}:latest > trivyresults.txt"
+      }
+    }
+
+    stage('Smoke Test Docker Image') {
+      steps {
+        echo "Running Smoke Test"
+        sh "docker run -d --name smokerun -p 8000:8000 ${registry}"
+        sh "sleep 30; curl -f http://localhost:8000 || exit 1"
+        sh "docker rm --force smokerun"
+      }
+    }
+  }
+}
