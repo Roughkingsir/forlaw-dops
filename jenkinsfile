@@ -4,7 +4,7 @@ pipeline {
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
-    DJANGO_SETTINGS_MODULE = 'yourproject.settings'
+    DJANGO_SETTINGS_MODULE = 'backend.settings'
   }
 
   stages {
@@ -16,18 +16,56 @@ pipeline {
 
     stage('Install Dependencies') {
       steps {
-        echo "Installing Django and React dependencies..."
-        sh "which python3 || sudo apt install python3 -y"
-        sh "which pip || sudo apt install python3-pip -y"
-        sh "pip install -r backend/requirements.txt"
-        sh "cd frontend && npm install"
+        echo "Installing system dependencies..."
+        sh '''
+          set -e
+          which python3 || sudo apt install python3 -y
+          which pip3 || sudo apt install python3-pip -y
+
+          which node || sudo apt install -y nodejs npm
+
+          if ! command -v docker &> /dev/null
+          then
+            echo "Docker could not be found. Installing..."
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+          fi
+
+          if ! command -v sonar-scanner &> /dev/null
+          then
+            echo "SonarScanner could not be found. Installing..."
+            sudo apt-get update
+            sudo apt-get install -y wget unzip
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-4.6.2.2472-linux.zip
+            unzip sonar-scanner-4.6.2.2472-linux.zip
+            sudo mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
+            echo 'export PATH=$PATH:/opt/sonar-scanner/bin' >> ~/.bashrc
+            source ~/.bashrc || true
+          fi
+
+          which bandit || sudo pip3 install bandit
+          which coverage || sudo pip3 install coverage
+          which safety || sudo pip3 install safety
+
+          if ! command -v trivy &> /dev/null
+          then
+            echo "Trivy could not be found. Installing..."
+            sudo apt-get update
+            sudo apt-get install -y curl
+            curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.26.0/trivy_0.26.0_Linux-64bit.deb -o trivy.deb
+            sudo dpkg -i trivy.deb || sudo apt-get install -f -y
+          fi
+
+          pip3 install -r backend/requirements.txt
+          cd frontend && npm install
+        '''
       }
     }
 
     stage('Run Tests & Coverage (Backend)') {
       steps {
         echo "Running Django Tests with Coverage"
-        sh "cd backend && coverage run manage.py test && coverage report && coverage xml"
+        sh "cd backend && python3 -m coverage run manage.py test && python3 -m coverage report && python3 -m coverage xml"
       }
     }
 
@@ -50,7 +88,7 @@ pipeline {
       steps {
         echo "Running SonarQube for Python and JS"
         withSonarQubeEnv('mysonar') {
-          sh "sonar-scanner -Dsonar.projectKey=forlaw-dops \
+          sh "/opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectKey=forlaw-dops \
                            -Dsonar.sources=backend,frontend \
                            -Dsonar.python.coverage.reportPaths=backend/coverage.xml"
         }
