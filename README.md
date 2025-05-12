@@ -1,6 +1,6 @@
 # CI/CD Test App
 
-This is a simple app to test your CI/CD pipeline, consisting of a React frontend and a Django backend.
+This is a simple app to test CI/CD pipeline, consisting of a React frontend and a Django backend.
 
 ## Folder Structure
 - `frontend/`: React app
