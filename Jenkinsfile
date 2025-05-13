@@ -58,9 +58,9 @@ pipeline {
           python3 -m coverage report
           python3 -m coverage xml
         '''
-      }
+       }
+     }
     }
-
     stage('Run Tests (Frontend)') {
       steps {
         echo "Running React Tests"
