@@ -52,8 +52,8 @@ pipeline {
     stage('Run Tests & Coverage (Backend)') {
       steps {
         echo "Running Django Tests with Coverage"
+        dir('backend') {
         sh '''
-          cd backend
           python3 -m coverage run manage.py test
           python3 -m coverage report
           python3 -m coverage xml
