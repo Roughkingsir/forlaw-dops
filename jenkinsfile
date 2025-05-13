@@ -52,7 +52,12 @@ pipeline {
     stage('Run Tests & Coverage (Backend)') {
       steps {
         echo "Running Django Tests with Coverage"
-        sh "cd backend DJANGO_SETTINGS_MODULE=settings python3 -m coverage run manage.py test && python3 -m coverage report && python3 -m coverage xml"
+        sh '''
+          cd backend
+          python3 -m coverage run manage.py test
+          python3 -m coverage report
+          python3 -m coverage xml
+        '''
       }
     }
 
@@ -66,8 +71,10 @@ pipeline {
     stage('SCA & SAST') {
       steps {
         echo "Running Security Scans with Bandit and Safety"
-        sh "bandit -r backend"
-        sh "safety check --file=backend/requirements.txt"
+        sh '''
+          bandit -r backend
+          safety check --file=backend/requirements.txt
+        '''
       }
     }
 
