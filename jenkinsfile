@@ -5,6 +5,7 @@ pipeline {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
     DJANGO_SETTINGS_MODULE = 'backend.settings'
+    PATH = "$PATH:/opt/sonar-scanner/bin"
   }
 
   stages {
@@ -19,39 +20,25 @@ pipeline {
         echo "Installing system dependencies..."
         sh '''
           set -e
-          which python3 || sudo apt install python3 -y
-          which pip3 || sudo apt install python3-pip -y
 
+          which python3 || sudo apt install -y python3
+          which pip3 || sudo apt install -y python3-pip
           which node || sudo apt install -y nodejs npm
+          which docker || sudo apt install -y docker.io
+          which wget || sudo apt install -y wget unzip curl
 
-          if ! command -v docker &> /dev/null
-          then
-            echo "Docker could not be found. Installing..."
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-          fi
-
-          if ! command -v sonar-scanner &> /dev/null
-          then
-            echo "SonarScanner could not be found. Installing..."
-            sudo apt-get update
-            sudo apt-get install -y wget unzip
+          # Install sonar-scanner if not installed
+          if ! [ -x /opt/sonar-scanner/bin/sonar-scanner ]; then
             wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-4.6.2.2472-linux.zip
             unzip sonar-scanner-4.6.2.2472-linux.zip
             sudo mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
-            echo 'export PATH=$PATH:/opt/sonar-scanner/bin' >> ~/.bashrc
-            source ~/.bashrc || true
           fi
 
           which bandit || sudo pip3 install bandit
           which coverage || sudo pip3 install coverage
           which safety || sudo pip3 install safety
 
-          if ! command -v trivy &> /dev/null
-          then
-            echo "Trivy could not be found. Installing..."
-            sudo apt-get update
-            sudo apt-get install -y curl
+          if ! command -v trivy &> /dev/null; then
             curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.26.0/trivy_0.26.0_Linux-64bit.deb -o trivy.deb
             sudo dpkg -i trivy.deb || sudo apt-get install -f -y
           fi
@@ -87,10 +74,13 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
-        withSonarQubeEnv('mysonar') {
-          sh "/opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectKey=forlaw-dops \
-                           -Dsonar.sources=backend,frontend \
-                           -Dsonar.python.coverage.reportPaths=backend/coverage.xml"
+        withSonarQubeEnv('mysonar1') {
+          sh '''
+            sonar-scanner \
+              -Dsonar.projectKey=forlaw-dops \
+              -Dsonar.sources=backend,frontend \
+              -Dsonar.python.coverage.reportPaths=backend/coverage.xml
+          '''
         }
       }
     }
@@ -114,7 +104,7 @@ pipeline {
         echo "Building Docker Image"
         script {
           docker.withRegistry('', registryCredential) {
-            def myImage = docker.build(registry, "-f dockerfile .")
+            def myImage = docker.build(registry)
             myImage.push()
           }
         }
@@ -131,10 +121,19 @@ pipeline {
     stage('Smoke Test Docker Image') {
       steps {
         echo "Running Smoke Test"
-        sh "docker run -d --name smokerun -p 8000:8000 ${registry}"
-        sh "sleep 30; curl -f http://localhost:8000 || exit 1"
-        sh "docker rm --force smokerun"
+        sh '''
+          docker run -d --name smokerun -p 8000:8000 ${registry}
+          for i in {1..10}; do curl -f http://localhost:8000 && break || sleep 5; done
+          docker rm --force smokerun
+        '''
       }
+    }
+  }
+
+  post {
+    always {
+      echo "Cleaning up workspace"
+      cleanWs()
     }
   }
 }
