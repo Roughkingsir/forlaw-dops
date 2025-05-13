@@ -54,7 +54,7 @@ pipeline {
         echo "Running Django Tests with Coverage"
         sh '''
           cd backend
-          python3 -m coverage run backend/manage.py test
+          python3 -m coverage run manage.py test
           python3 -m coverage report
           python3 -m coverage xml
         '''
