@@ -44,7 +44,9 @@ pipeline {
           fi
 
           pip3 install -r backend/requirements.txt
-          cd frontend && npm install
+          sudo npm install -g npm@latest
+          cd frontend 
+          npm install --legacy-peer-deps
         '''
       }
     }
