@@ -4,7 +4,7 @@ pipeline {
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
-    DJANGO_SETTINGS_MODULE = 'settings'
+    DJANGO_SETTINGS_MODULE = 'backend.settings'
     PATH = "$PATH:/opt/sonar-scanner/bin"
   }
 
@@ -46,7 +46,7 @@ pipeline {
 
           pip3 install -r backend/requirements.txt
           sudo npm install -g npm@10.8.2
-          cd frontend 
+          cd frontend
           npm install --legacy-peer-deps
         '''
       }
@@ -56,19 +56,18 @@ pipeline {
       steps {
         echo "Running Django Tests with Coverage"
         sh '''
-          export PYTHONPATH=$(pwd)/backend
-          cd backend
-          python3 -m coverage run manage.py test
+          export PYTHONPATH=$(pwd)
+          python3 -m coverage run backend/manage.py test
           python3 -m coverage report
           python3 -m coverage xml
         '''
-       }
-     }
+      }
     }
+
     stage('Run Tests (Frontend)') {
       steps {
-        echo "Running React Tests"
-        sh "cd frontend && npm test -- --watchAll=false"
+        echo "Running Vite Tests"
+        sh "cd frontend && npm test -- --coverage"
       }
     }
 
@@ -139,7 +138,7 @@ pipeline {
         '''
       }
     }
-  }
+  } // This is the missing closing curly brace for the 'stages' block
 
   post {
     always {
