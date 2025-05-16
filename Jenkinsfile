@@ -4,7 +4,7 @@ pipeline {
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
-    DJANGO_SETTINGS_MODULE = 'settings'
+    DJANGO_SETTINGS_MODULE = 'backend.settings'
     PATH = "$PATH:/opt/sonar-scanner/bin"
   }
 
@@ -56,9 +56,8 @@ pipeline {
       steps {
         echo "Running Django Tests with Coverage"
         sh '''
-          export PYTHONPATH=$(pwd)/backend
-          cd backend
-          python3 -m coverage run manage.py test
+          export PYTHONPATH=$(pwd)
+          python3 -m coverage run backend/manage.py test
           python3 -m coverage report
           python3 -m coverage xml
         '''
