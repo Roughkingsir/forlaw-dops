@@ -24,6 +24,7 @@ pipeline {
           which python3 || sudo apt install -y python3
           which pip3 || sudo apt install -y python3-pip
           which node || sudo apt install -y nodejs npm
+          sudo npm install -g npm-check-updates && ncu -u && npm install
           which docker || sudo apt install -y docker.io
           which wget || sudo apt install -y wget unzip curl
 
