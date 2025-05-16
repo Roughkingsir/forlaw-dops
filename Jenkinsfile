@@ -66,8 +66,8 @@ pipeline {
 
     stage('Run Tests (Frontend)') {
       steps {
-        echo "Running React Tests"
-        sh "cd frontend && npm test -- --watchAll=false"
+        echo "Running Vite Tests"
+        sh "cd frontend && npm test -- --coverage"
       }
     }
 
