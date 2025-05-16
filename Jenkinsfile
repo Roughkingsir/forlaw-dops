@@ -46,7 +46,7 @@ pipeline {
 
           pip3 install -r backend/requirements.txt
           sudo npm install -g npm@10.8.2
-          cd frontend 
+          cd frontend
           npm install --legacy-peer-deps
         '''
       }
@@ -62,9 +62,9 @@ pipeline {
           python3 -m coverage report
           python3 -m coverage xml
         '''
-       }
-     }
+      }
     }
+
     stage('Run Tests (Frontend)') {
       steps {
         echo "Running React Tests"
@@ -139,6 +139,7 @@ pipeline {
         '''
       }
     }
+  } // This is the missing closing curly brace for the 'stages' block
 
   post {
     always {
@@ -146,3 +147,4 @@ pipeline {
       cleanWs()
     }
   }
+}
