@@ -67,7 +67,10 @@ pipeline {
     stage('Run Tests (Frontend)') {
       steps {
         echo "Running Vite Tests"
-        sh "cd frontend && npm test -- --coverage"
+        sh '''
+          cd frontend 
+          npx vitest run --coverage
+        '''
       }
     }
 
