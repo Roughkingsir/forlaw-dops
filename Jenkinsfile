@@ -69,6 +69,8 @@ pipeline {
         echo "Running Vite Tests"
         sh '''
           cd frontend 
+          dos2unix node_modules/.bin/vitest || true
+          chmod +x node_modules/.bin/vitest
           npx vitest run --coverage
         '''
       }
