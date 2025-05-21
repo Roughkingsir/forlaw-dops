@@ -91,6 +91,8 @@ pipeline {
     }
 
     stage('SonarQube Analysis') {
+      tools {
+        sonarScanner 'sonar-scanner'
       steps {
         echo "Running SonarQube for Python and JS"
         withSonarQubeEnv('mysonar1') {
