@@ -1,6 +1,10 @@
 pipeline {
   agent { label 'build' }
 
+  tools {
+    sonarScanner 'sonar-scanner'
+  }
+
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
@@ -82,17 +86,15 @@ pipeline {
         echo "Running Security Scans with Bandit and Safety"
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           sh '''
-              bandit -r backend -f json -o bandit-report.json || true
-              safety check --file=backend/requirements.txt --full-report > safety-report.txt || true
+            bandit -r backend -f json -o bandit-report.json || true
+            safety check --file=backend/requirements.txt --full-report > safety-report.txt || true
           '''
-            echo "Bandit and Safety scans completed. Reports generated."
+          echo "Bandit and Safety scans completed. Reports generated."
         }
       }
     }
 
     stage('SonarQube Analysis') {
-      tools {
-        sonarScanner 'sonar-scanner'
       steps {
         echo "Running SonarQube for Python and JS"
         withSonarQubeEnv('mysonar1') {
@@ -149,7 +151,7 @@ pipeline {
         '''
       }
     }
-  } 
+  }
 
   post {
     always {
@@ -157,5 +159,4 @@ pipeline {
       cleanWs()
     }
   }
-}
 }
