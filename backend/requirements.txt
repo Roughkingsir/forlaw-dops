@@ -3,5 +3,5 @@ uvicorn==0.29.0
 Django==4.2.0
 djangorestframework==3.14.0
 django-cors-headers==4.3.0 
-bandit>=1.7.0
-safety>=1.10.3
+bandit==1.7.0
+safety==1.10.3
