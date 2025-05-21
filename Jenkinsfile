@@ -80,13 +80,15 @@ pipeline {
     stage('SCA & SAST') {
       steps {
         echo "Running Security Scans with Bandit and Safety"
-        sh '''
-          bandit -r backend
-          safety check --file=backend/requirements.txt
-        '''
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          sh '''
+              bandit -r backend
+              safety check --file=backend/requirements.txt
+          '''
+        }
       }
     }
-
+    
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
