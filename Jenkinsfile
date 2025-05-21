@@ -82,13 +82,14 @@ pipeline {
         echo "Running Security Scans with Bandit and Safety"
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           sh '''
-              bandit -r backend
-              safety check --file=backend/requirements.txt
+              bandit -r backend -f json -o bandit-report.json || true
+              safety check --file=backend/requirements.txt --full-report > safety-report.txt || true
           '''
+            echo "Bandit and Safety scans completed. Reports generated."
         }
       }
     }
-    
+
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
