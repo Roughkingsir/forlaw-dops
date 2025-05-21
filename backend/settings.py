@@ -4,7 +4,11 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+
+if not SECRET_KEY:
+    raise Exception("SECRET_KEY not found in environment variables")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

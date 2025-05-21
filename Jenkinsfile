@@ -6,6 +6,7 @@ pipeline {
     registryCredential = 'dockerhub'
     DJANGO_SETTINGS_MODULE = 'backend.settings'
     PATH = "$PATH:/opt/sonar-scanner/bin"
+    DJANGO_SECRET_KEY = credentials('DJANGO_SECRET_KEY')
   }
 
   stages {
@@ -143,7 +144,7 @@ pipeline {
         '''
       }
     }
-  } // This is the missing closing curly brace for the 'stages' block
+  } 
 
   post {
     always {
