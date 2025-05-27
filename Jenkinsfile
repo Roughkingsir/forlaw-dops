@@ -1,6 +1,9 @@
 pipeline {
   agent { label 'build' }
 
+  tools {
+    sonarQubeScanner 'sonar-scanner'
+  }
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
@@ -93,7 +96,7 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
-        withSonarQubeEnv('mysonar1') {
+        withSonarQubeEnv('mysonar') {
           sh '''
             sonar-scanner \
               -Dsonar.projectKey=forlaw-dops \
