@@ -8,7 +8,9 @@ RUN pip install -r requirements.txt
 FROM node:18-alpine as frontend
 WORKDIR /frontend
 COPY frontend/ /frontend/
-RUN npm install && npm run build
+RUN npm install 
+RUN chmod +x node_modules/.bin/vite
+RUN npm run build
 
 # Final image
 FROM python:3.10-slim
