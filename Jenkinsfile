@@ -121,11 +121,13 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         echo "Building Docker Image"
-        script {
-          docker.withRegistry('', registryCredential) {
-            def myImage = docker.build(registry)
-            myImage.push()
-          }
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker build -t ${registry}:latest .
+            docker push ${registry}:latest
+            docker logout
+          '''
         }
       }
     }
