@@ -1,10 +1,6 @@
 pipeline {
   agent { label 'build' }
 
-  tools {
-    sonarScanner 'sonar-scanner'
-  }
-
   environment {
     registry = "saadkhan0/yourapp"
     registryCredential = 'dockerhub'
