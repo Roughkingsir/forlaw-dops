@@ -93,7 +93,7 @@ pipeline {
     stage('SonarQube Analysis') {
       steps {
         echo "Running SonarQube for Python and JS"
-        withSonarQubeEnv('mysonar1') {
+        withSonarQubeEnv('mysonar') {
           sh '''
             sonar-scanner \
               -Dsonar.projectKey=forlaw-dops \
@@ -121,11 +121,13 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         echo "Building Docker Image"
-        script {
-          docker.withRegistry('', registryCredential) {
-            def myImage = docker.build(registry)
-            myImage.push()
-          }
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker build --build-arg SECRET_KEY=$DJANGO_SECRET_KEY -t ${registry}:latest .
+            docker push ${registry}:latest
+            docker logout
+          '''
         }
       }
     }
