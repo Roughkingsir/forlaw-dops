@@ -28,5 +28,7 @@ RUN pip install -r requirements.txt
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-ENV DJANGO_SETTINGS_MODULE=backend.settings
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi"]
+# Set Django environment variables (no nested backend module)
+ENV DJANGO_SETTINGS_MODULE=settings
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "wsgi:application"]
