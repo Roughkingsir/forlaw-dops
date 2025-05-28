@@ -124,7 +124,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker build -t ${registry}:latest .
+            docker build --build-arg SECRET_KEY=$DJANGO_SECRET_KEY -t ${registry}:latest .
             docker push ${registry}:latest
             docker logout
           '''
