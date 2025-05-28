@@ -25,10 +25,11 @@ COPY --from=frontend /frontend/dist /app/static/
 # Reinstall Django dependencies
 RUN pip install -r requirements.txt
 
+# Set Django environment variables BEFORE running collectstatic
+ENV DJANGO_SETTINGS_MODULE=settings
+ENV PYTHONPATH=/app
+
 # Collect static files
 RUN python manage.py collectstatic --noinput
-
-# Set Django environment variables (no nested backend module)
-ENV DJANGO_SETTINGS_MODULE=settings
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "wsgi:application"]
