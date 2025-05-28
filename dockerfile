@@ -2,6 +2,8 @@
 FROM python:3.10-slim as backend
 WORKDIR /app
 COPY backend/ /app/
+ARG SECRET_KEY
+ENV SECRET_KEY=$SECRET_KEY
 RUN pip install -r requirements.txt
 
 # Frontend (Vite)
@@ -16,6 +18,9 @@ RUN npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
+ARG SECRET_KEY
+ENV SECRET_KEY=$SECRET_KEY
+
 # Copy Django backend
 COPY --from=backend /app /app
 
@@ -25,11 +30,9 @@ COPY --from=frontend /frontend/dist /app/static/
 # Reinstall Django dependencies
 RUN pip install -r requirements.txt
 
-# Set Django environment variables BEFORE running collectstatic
-ENV DJANGO_SETTINGS_MODULE=settings
-ENV PYTHONPATH=/app
-
 # Collect static files
 RUN python manage.py collectstatic --noinput
+
+ENV DJANGO_SETTINGS_MODULE=settings
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "wsgi:application"]
