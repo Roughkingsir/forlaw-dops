@@ -6,7 +6,6 @@ pipeline {
     registryCredential = 'dockerhub'
     DJANGO_SETTINGS_MODULE = 'backend.settings'
     PATH = "$PATH:/opt/sonar-scanner/bin"
-    DJANGO_SECRET_KEY = credentials('DJANGO_SECRET_KEY')
   }
 
   stages {
@@ -18,7 +17,6 @@ pipeline {
 
     stage('Install Dependencies') {
       steps {
-        echo "Installing system dependencies..."
         sh '''
           set -e
 
@@ -29,7 +27,6 @@ pipeline {
           which docker || sudo apt install -y docker.io
           which wget || sudo apt install -y wget unzip curl
 
-          # Install sonar-scanner if not installed
           if ! [ -x /opt/sonar-scanner/bin/sonar-scanner ]; then
             wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-4.6.2.2472-linux.zip
             unzip sonar-scanner-4.6.2.2472-linux.zip
@@ -53,9 +50,8 @@ pipeline {
       }
     }
 
-    stage('Run Tests & Coverage (Backend)') {
+    stage('Run Backend Tests & Coverage') {
       steps {
-        echo "Running Django Tests with Coverage"
         sh '''
           export PYTHONPATH=$(pwd)
           python3 -m coverage run backend/manage.py test
@@ -65,9 +61,8 @@ pipeline {
       }
     }
 
-    stage('Run Tests (Frontend)') {
+    stage('Run Frontend Tests') {
       steps {
-        echo "Running Vite Tests"
         sh '''
           cd frontend 
           dos2unix node_modules/.bin/vitest || true
@@ -79,20 +74,17 @@ pipeline {
 
     stage('SCA & SAST') {
       steps {
-        echo "Running Security Scans with Bandit and Safety"
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           sh '''
             bandit -r backend -f json -o bandit-report.json || true
             safety check --file=backend/requirements.txt --full-report > safety-report.txt || true
           '''
-          echo "Bandit and Safety scans completed. Reports generated."
         }
       }
     }
 
     stage('SonarQube Analysis') {
       steps {
-        echo "Running SonarQube for Python and JS"
         withSonarQubeEnv('mysonar') {
           sh '''
             sonar-scanner \
@@ -106,25 +98,23 @@ pipeline {
 
     stage('Quality Gates') {
       steps {
-        echo "Checking Quality Gate"
-        script {
-          timeout(time: 1, unit: 'MINUTES') {
-            def qg = waitForQualityGate()
-            if (qg.status != 'OK') {
-              error "Pipeline failed due to quality gate: ${qg.status}"
-            }
+        timeout(time: 1, unit: 'MINUTES') {
+          def qg = waitForQualityGate()
+          if (qg.status != 'OK') {
+            error "Pipeline failed due to quality gate: ${qg.status}"
           }
         }
       }
     }
 
-    stage('Build Docker Image') {
+    stage('Build & Push Docker Image') {
       steps {
-        echo "Building Docker Image"
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        withCredentials([
+          usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+        ]) {
           sh '''
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker build --build-arg SECRET_KEY=$DJANGO_SECRET_KEY -t ${registry}:latest .
+            docker build -t ${registry}:latest .
             docker push ${registry}:latest
             docker logout
           '''
@@ -134,26 +124,27 @@ pipeline {
 
     stage('Scan Docker Image') {
       steps {
-        echo "Scanning Docker Image with Trivy"
         sh "trivy image --scanners vuln --offline-scan ${registry}:latest > trivyresults.txt"
       }
     }
 
-    stage('Smoke Test Docker Image') {
+    stage('Smoke Test') {
       steps {
-        echo "Running Smoke Test"
-        sh '''
-          docker run -d --name smokerun -p 8000:8000 ${registry}
-          for i in {1..10}; do curl -f http://localhost:8000 && break || sleep 5; done
-          docker rm --force smokerun
-        '''
+        withCredentials([
+          string(credentialsId: 'DJANGO_SECRET_KEY', variable: 'DJANGO_SECRET_KEY')
+        ]) {
+          sh '''
+            docker run -d --name smokerun -p 8000:8000 -e DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" ${registry}:latest
+            for i in {1..10}; do curl -f http://localhost:8000 && break || sleep 5; done
+            docker rm --force smokerun
+          '''
+        }
       }
     }
   }
 
   post {
     always {
-      echo "Cleaning up workspace"
       cleanWs()
     }
   }
